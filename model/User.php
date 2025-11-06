@@ -10,46 +10,49 @@ class User {
 
     /**
      * Registrasi user baru
-     * Menerapkan Encryption (password_hash) 
-     * Menerapkan Prepared Statements (Anti-SQL Injection) 
+     * Menggunakan password_hash() untuk keamanan
+     * Menggunakan prepared statement untuk mencegah SQL injection
      */
-    public function register($nama, $username, $password) { // Ditambah $nama
+    public function register($nama, $username, $password) {
         // Enkripsi password
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         
-        // SQL diubah untuk menyertakan 'nama'
-        $sql = "INSERT INTO users (nama, username, password) VALUES (?, ?, ?)"; 
+        // SQL untuk menambah user baru
+        $sql = "INSERT INTO users (nama, username, password) VALUES (?, ?, ?)";
+        
         try {
             $stmt = $this->db->prepare($sql);
-            // Eksekusi diubah untuk menyertakan $nama
-            $stmt->execute([$nama, $username, $hashedPassword]); 
+            $stmt->execute([$nama, $username, $hashedPassword]);
             return true;
         } catch (PDOException $e) {
-            // Cek jika error karena username sudah ada (unique constraint)
-            // Kode error 1062 spesifik untuk MySQL duplicate entry
-            if ($e->getCode() == 23000 || $e->getCode() == 1062) { 
-                return false; // Username duplikat
+            // Tangani duplikat username (error code 1062 untuk MySQL)
+            if ($e->getCode() == 23000 || $e->getCode() == 1062) {
+                return false; // username sudah terdaftar
             }
-            throw $e;
+            throw $e; // error lain dilempar ke atas
         }
     }
 
     /**
      * Login user
-     * Menerapkan Authentication 
+     * Verifikasi password dengan password_verify()
      */
     public function login($username, $password) {
-        // SELECT * sudah mengambil semua kolom (termasuk 'nama')
         $sql = "SELECT * FROM users WHERE username = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$username]);
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // Verifikasi password 
-        if ($user && password_verify($password, $user['password'])) {
-            return $user; // Login berhasil
-        } else {
-            return false; // Login gagal
+        // Pastikan data user ditemukan dan kolom password ada
+        if ($user && isset($user['password']) && !empty($user['password'])) {
+            // Verifikasi password hash
+            if (password_verify($password, $user['password'])) {
+                return $user; // Login sukses, kembalikan data user
+            } else {
+                return false; // Password salah
+            }
         }
+
+        return false; // Username tidak ditemukan atau kolom password tidak valid
     }
 }
