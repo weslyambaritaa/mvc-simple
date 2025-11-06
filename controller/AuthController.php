@@ -33,6 +33,7 @@ class AuthController {
                 // Autentikasi berhasil: Simpan ke Session 
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
+                $_SESSION['nama'] = $user['nama']; // Ditambah: simpan nama ke session
                 
                 // Redirect ke dashboard
                 header('Location: index.php?url=auth/dashboard');
@@ -51,13 +52,16 @@ class AuthController {
      */
     public function processRegister() {
         if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+            $nama = trim($_POST['nama']); // Ditambah: ambil nama
             $username = trim($_POST['username']);
             $password = trim($_POST['password']);
 
             // Validasi data sederhana (Data Integrity) 
-            if (empty($username) || empty($password)) {
-                $response = ['success' => false, 'message' => 'Username dan password tidak boleh kosong.'];
-            } elseif ($this->userModel->register($username, $password)) {
+            // Ditambah: validasi $nama
+            if (empty($nama) || empty($username) || empty($password)) { 
+                $response = ['success' => false, 'message' => 'Nama, username, dan password tidak boleh kosong.'];
+            // Panggil model dengan $nama
+            } elseif ($this->userModel->register($nama, $username, $password)) { 
                 $response = ['success' => true, 'message' => 'Registrasi berhasil! Silakan login.'];
             } else {
                 $response = ['success' => false, 'message' => 'Username sudah terdaftar.'];
@@ -80,9 +84,9 @@ class AuthController {
             exit;
         }
 
-        // Ambil data user dari session untuk ditampilkan
+        // Ambil data user (nama) dari session untuk ditampilkan
         $data = [
-            'username' => $_SESSION['username']
+            'nama' => $_SESSION['nama'] // Diubah dari username ke nama
         ];
         
         include 'view/dashboard.php';

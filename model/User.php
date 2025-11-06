@@ -13,18 +13,21 @@ class User {
      * Menerapkan Encryption (password_hash) 
      * Menerapkan Prepared Statements (Anti-SQL Injection) 
      */
-    public function register($username, $password) {
+    public function register($nama, $username, $password) { // Ditambah $nama
         // Enkripsi password
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         
-        $sql = "INSERT INTO users (username, password) VALUES (?, ?)";
+        // SQL diubah untuk menyertakan 'nama'
+        $sql = "INSERT INTO users (nama, username, password) VALUES (?, ?, ?)"; 
         try {
             $stmt = $this->db->prepare($sql);
-            $stmt->execute([$username, $hashedPassword]);
+            // Eksekusi diubah untuk menyertakan $nama
+            $stmt->execute([$nama, $username, $hashedPassword]); 
             return true;
         } catch (PDOException $e) {
             // Cek jika error karena username sudah ada (unique constraint)
-            if ($e->getCode() == 23505) { 
+            // Kode error 1062 spesifik untuk MySQL duplicate entry
+            if ($e->getCode() == 23000 || $e->getCode() == 1062) { 
                 return false; // Username duplikat
             }
             throw $e;
@@ -36,6 +39,7 @@ class User {
      * Menerapkan Authentication 
      */
     public function login($username, $password) {
+        // SELECT * sudah mengambil semua kolom (termasuk 'nama')
         $sql = "SELECT * FROM users WHERE username = ?";
         $stmt = $this->db->prepare($sql);
         $stmt->execute([$username]);
